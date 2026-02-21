@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ImpactRadar – Blast Radius Report</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+    }
+
+    header {
+      padding: 20px 40px;
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+
+    .risk-badge {
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .critical { background: #7f1d1d; color: #fecaca; }
+    .high { background: #78350f; color: #fde68a; }
+    .medium { background: #164e63; color: #a5f3fc; }
+    .low { background: #064e3b; color: #bbf7d0; }
+
+    .container {
+      padding: 30px 40px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: #111827;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid #1f2937;
+    }
+
+    .card h3 {
+      margin-top: 0;
+      font-size: 13px;
+      color: #94a3b8;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .card p {
+      font-size: 20px;
+      margin: 5px 0 0 0;
+      font-weight: 600;
+    }
+
+    .section {
+      margin-bottom: 50px;
+    }
+
+    .section h2 {
+      font-size: 16px;
+      margin-bottom: 15px;
+      border-bottom: 1px solid #1f2937;
+      padding-bottom: 8px;
+    }
+
+    .mermaid {
+      background: #111827;
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    .prob-bar { margin: 12px 0; }
+    .prob-label { font-size: 13px; margin-bottom: 4px; }
+
+    .bar-bg {
+      height: 8px;
+      background: #1f2937;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 8px;
+    }
+
+    .bar-error { background: #f97316; }
+    .bar-null { background: #ef4444; }
+    .bar-exception { background: #eab308; }
+    .bar-data { background: #22c55e; }
+
+    .api-item {
+      padding: 12px;
+      margin-bottom: 10px;
+      background: #0f172a;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .muted { color: #64748b; font-size: 12px; }
+
+    .ai-box {
+      background: #111827;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid #1f2937;
+      margin-bottom: 15px;
+    }
+
+    .ai-box h3 {
+      margin-top: 0;
+      font-size: 14px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .danger-highlight {
+      background: #7f1d1d;
+      color: #fecaca;
+      padding: 15px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+
+    .trace-box {
+      background: #0f172a;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #1f2937;
+      font-family: monospace;
+      font-size: 13px;
+    }
+
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>ImpactRadar – Blast Radius Report</h1>
+  <div id="riskBadge" class="risk-badge"></div>
+</header>
+
+<div class="container">
+
+  <!-- SUMMARY -->
+  <div class="grid">
+    <div class="card">
+      <h3>Target</h3>
+      <p id="targetName"></p>
+    </div>
+    <div class="card">
+      <h3>Impacted Nodes</h3>
+      <p id="impactedNodes"></p>
+    </div>
+    <div class="card">
+      <h3>API Surface</h3>
+      <p id="apiSurface"></p>
+    </div>
+    <div class="card">
+      <h3>Confidence</h3>
+      <p id="confidenceScore"></p>
+    </div>
+  </div>
+
+  <!-- FAILURE PROBABILITIES -->
+  <div class="section">
+    <h2>Failure Probability Model</h2>
+    <div id="probabilities"></div>
+  </div>
+
+  <!-- GRAPH -->
+  <div class="section">
+    <h2>Blast Radius Graph</h2>
+    <div id="graph"></div>
+  </div>
+
+  <!-- API IMPACT -->
+  <div class="section">
+    <h2>High Risk Endpoints</h2>
+    <div id="apiList"></div>
+  </div>
+
+  <!-- AI ANALYSIS -->
+  <div class="section">
+    <h2>AI Impact Analysis</h2>
+
+    <div class="ai-box">
+      <h3>Summary</h3>
+      <p id="aiSummary"></p>
+    </div>
+
+    <div class="ai-box">
+      <h3>Behavioral Change Interpretation</h3>
+      <p id="aiBehavior"></p>
+    </div>
+
+    <div class="ai-box">
+      <h3>Technical Reasoning</h3>
+      <ul id="aiTech"></ul>
+    </div>
+
+    <div class="ai-box">
+      <h3>Deployment Projection</h3>
+      <p><strong>Immediate Effects:</strong></p>
+      <p id="aiImmediate"></p>
+      <p><strong>Long Term Effects:</strong></p>
+      <p id="aiLongTerm"></p>
+    </div>
+
+    <div class="ai-box danger-highlight" id="aiScary"></div>
+
+    <div class="ai-box">
+      <h3>Simulated Failure Trace</h3>
+      <div class="trace-box" id="aiTrace"></div>
+    </div>
+
+    <div class="ai-box">
+      <h3>Recommendation</h3>
+      <p id="aiRecommendation"></p>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  const report = __REPORT_JSON__;
+  mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+
+  document.getElementById("targetName").textContent = report.analysis_metadata.target;
+  document.getElementById("impactedNodes").textContent = report.impact_summary.total_impacted_nodes;
+  document.getElementById("apiSurface").textContent = report.impact_summary.api_surface_impact;
+  document.getElementById("confidenceScore").textContent = report.impact_summary.confidence.overall;
+
+  const badge = document.getElementById("riskBadge");
+  const risk = report.risk_model.risk_level.toLowerCase();
+  badge.textContent = report.risk_model.risk_level;
+  badge.classList.add(risk.split(" ")[0]);
+
+  const probs = report.risk_model.estimated_failure_probabilities;
+  const probContainer = document.getElementById("probabilities");
+
+  function addBar(label, value, css) {
+    const percent = parseInt(value);
+    probContainer.innerHTML += `
+      <div class="prob-bar">
+        <div class="prob-label">${label} (${value})</div>
+        <div class="bar-bg">
+          <div class="bar-fill ${css}" style="width:${percent}%"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  addBar("Error Spike", probs.error_spike_probability, "bar-error");
+  addBar("Null Dereference", probs.null_dereference_probability, "bar-null");
+  addBar("Unhandled Exception", probs.unhandled_exception_probability, "bar-exception");
+  addBar("Data Inconsistency", probs.dataInconsistency_probability, "bar-data");
+
+  function generateGraph(data) {
+    let graph = "graph TD\n";
+    const target = data.impact_tree.target_node_details.name;
+    const targetId = target.replace(/[^a-zA-Z0-9]/g, "_");
+    graph += `${targetId}["${target}"]\n`;
+    data.impact_tree.direct_dependents.forEach(dep => {
+      const depId = dep.id.replace(/[^a-zA-Z0-9]/g, "_");
+      graph += `${depId}["${dep.id}"]\n`;
+      graph += `${depId} --> ${targetId}\n`;
+    });
+    return graph;
+  }
+
+  const graphDef = generateGraph(report);
+  document.getElementById("graph").innerHTML = `<div class="mermaid">${graphDef}</div>`;
+  mermaid.init(undefined, ".mermaid");
+
+  const apiList = document.getElementById("apiList");
+  report.ranked_api_impacts.forEach(api => {
+    apiList.innerHTML += `
+      <div class="api-item">
+        <strong>${api.id}</strong><br/>
+        <span class="muted">${api.file}</span><br/>
+        Criticality: ${api.criticality.level}
+      </div>
+    `;
+  });
+
+  const ai = report.ai_analysis;
+  document.getElementById("aiSummary").textContent = ai.summary;
+  document.getElementById("aiBehavior").textContent = ai.behavioral_delta_interpretation;
+
+  ai.technical_reasoning.forEach(item => {
+    document.getElementById("aiTech").innerHTML += `<li>${item}</li>`;
+  });
+
+  document.getElementById("aiImmediate").textContent = ai.deployment_projection.immediate_effects;
+  document.getElementById("aiLongTerm").textContent = ai.deployment_projection.long_term_effects;
+  document.getElementById("aiScary").textContent = ai.scary_insight;
+  document.getElementById("aiTrace").textContent = ai.simulated_failure_trace;
+  document.getElementById("aiRecommendation").textContent = ai.recommendation;
+
+</script>
+
+</body>
+</html>
