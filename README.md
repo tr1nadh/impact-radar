@@ -3,10 +3,6 @@
   <img src="https://github.com/user-attachments/assets/b775a4a6-6f70-47ca-b0a7-bc4607686ae8" width="400" alt="ImpactRadar Logo"/>
 </p>
 
-Good. I will **strengthen positioning and clarity** without touching any technical or implementation details.
-
-Here is your rewritten README in clean Markdown format, improved for judges but technically identical.
-
 ---
 
 # 🚨 ImpactRadar
