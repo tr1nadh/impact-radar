@@ -135,7 +135,7 @@ export OPENAI_API_KEY=sk-proj-xxxx
 ```bash
 node impactRadar.js \
   --project ./path-to-project \
-  --target "src/lib/db/users.js::getUserById" \
+  --target "getUserById" \
   --change_type "validation_change" \
   --visualize
 ```
