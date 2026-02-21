@@ -5,7 +5,7 @@
 
 # 🚨 ImpactRadar
 
-ImpactRadar is an AI-powered Blast Radius Analysis tool for JavaScript/Node.js codebases.
+ImpactRadar is an AI-powered Blast Radius Analysis tool for JavaScript codebases.
 
 It analyzes a proposed code change and makes its system-wide impact visible **before it is merged**.
 
@@ -143,7 +143,7 @@ export OPENAI_API_KEY=sk-proj-xxxx
 
 ```bash
 node impactRadar.js \
-  --project ./path-to-project \
+  --project "./path-to-project" \
   --target "getUserById" \
   --change_type "validation_change" \
   --visualize
