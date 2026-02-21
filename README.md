@@ -3,6 +3,12 @@
   <img src="https://github.com/user-attachments/assets/b775a4a6-6f70-47ca-b0a7-bc4607686ae8" width="400" alt="ImpactRadar Logo"/>
 </p>
 
+Good. I will **strengthen positioning and clarity** without touching any technical or implementation details.
+
+Here is your rewritten README in clean Markdown format, improved for judges but technically identical.
+
+---
+
 # 🚨 ImpactRadar
 
 ImpactRadar is an AI-powered Blast Radius Analysis tool for JavaScript codebases.
@@ -12,9 +18,24 @@ It analyzes a proposed code change and makes its system-wide impact visible **be
 This is not about predicting failures.
 It is about making impact explicit so engineers can act with confidence.
 
+🔗 **Live Demo:** [YouTube Video](https://youtu.be/snfx-d7SZSs)
+
 ---
 
-🔗 **Live Demo:** [YouTube Video](https://youtu.be/snfx-d7SZSs)
+## 🧨 The Problem
+
+Software teams often merge changes without fully understanding their system-wide impact.
+
+Traditional static analysis tools detect syntax issues and lint errors — but they do not simulate blast radius or deployment consequences.
+
+This leads to:
+
+* Unexpected API breakages
+* Runtime null dereferences
+* Hidden architectural risk
+* Expensive production rollbacks
+
+ImpactRadar makes impact explicit before production feels it.
 
 ---
 
@@ -153,12 +174,12 @@ node impactRadar.js \
 
 ## ⚙️ CLI Options
 
-| Option                         | Description                                   |
-| ------------------------------ | --------------------------------------------- |
-| `--project`                    | Path to project directory (required)          |
-| `--target`                     | Function or API being changed (required)      |
-| `--change_type`                | Semantic change classification (required)     |
-| `--visualize`                  | Generate HTML visualization                   |
+| Option          | Description                               |
+| --------------- | ----------------------------------------- |
+| `--project`     | Path to project directory (required)      |
+| `--target`      | Function or API being changed (required)  |
+| `--change_type` | Semantic change classification (required) |
+| `--visualize`   | Generate HTML visualization               |
 
 ---
 
@@ -231,7 +252,7 @@ Engineers often merge changes without understanding:
 * Are callers defensively coded?
 * What happens if this goes live?
 
-ImpactRadar answers those questions **before production**.
+ImpactRadar answers those questions before production.
 
 ---
 
