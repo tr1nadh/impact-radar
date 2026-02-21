@@ -7,9 +7,9 @@
 
 # 🚨 ImpactRadar
 
-ImpactRadar is an AI-powered Blast Radius Analysis tool for JavaScript codebases.
+ImpactRadar is an AI-powered Blast Radius Analysis tool, currently scoped to SvelteKit applications.
 
-It analyzes a proposed code change and makes its system-wide impact visible **before it is merged**.
+It analyzes a proposed code change and makes its system-wide impact visible before it is merged.
 
 This is not about predicting failures.
 It is about making impact explicit so engineers can act with confidence.
