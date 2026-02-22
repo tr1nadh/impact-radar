@@ -144,7 +144,7 @@ export function scanCallerSafety(filePath, targetFunctionName) {
 
         const ast = parser.parse(code, {
             sourceType: 'module',
-            plugins: ['jsx', 'typescript', 'decorators-legacy', 'importAssertions', 'dynamicImport'] // Removed 'estree'
+            plugins: ['jsx', 'typescript', 'decorators-legacy', 'importAssertions', 'dynamicImport', 'classProperties', 'optionalChaining', 'nullishCoalescingOperator']
         });
 
         babelTraverse(ast, {
@@ -289,6 +289,38 @@ export function scanCallerSafety(filePath, targetFunctionName) {
                         unhandledErrorProbability,
                         unsafeDereferenceBreakdown, // Renamed
                         unhandledErrorBreakdown
+                    });
+                }
+            },
+            JSXOpeningElement(p) {
+                let componentName = null;
+                if (t.isJSXIdentifier(p.node.name)) {
+                    componentName = p.node.name.name;
+                } else if (t.isJSXMemberExpression(p.node.name)) {
+                    if (t.isJSXIdentifier(p.node.name.property)) {
+                        componentName = p.node.name.property.name;
+                    }
+                }
+
+                if (componentName === targetFunctionName) {
+                    // Logic for component safety analysis (props)
+                    // For now, we assume props are handled somewhat safely or at least record the occurrence
+                    safetyAnalyses.push({
+                        file: filePath,
+                        line: p.node.loc?.start.line,
+                        column: p.node.loc?.start.column,
+                        callee: componentName,
+                        type: 'jsx_component',
+                        hasTryCatch: false, // Components don't usually have try-catch around them in JSX
+                        hasNullCheck: false,
+                        isDestructuredImmediately: false,
+                        assumedExists: true,
+                        isAsyncCall: false,
+                        isOptionalChaining: false,
+                        unsafeDereferenceLikelihood: 0.5, // Base risk for components
+                        unhandledErrorProbability: 0.3,
+                        unsafeDereferenceBreakdown: ["Base: Component usage in JSX recognized"],
+                        unhandledErrorBreakdown: ["Base: Component usage in JSX recognized"]
                     });
                 }
             }

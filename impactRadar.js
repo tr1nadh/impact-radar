@@ -73,12 +73,17 @@ const SEMANTIC_CHANGE_PROFILES = {
 
 const ARCHITECTURAL_ZONE_WEIGHTS = {
     "Database Access Layer": 1.8,
+    "Database Access Layer / Models": 1.8,
     "Authentication Layer": 1.5,
     "API Layer / Route Handlers": 1.2,
     "Middleware": 1.0,
     "Service / Business Logic Layer": 1.0,
-    "UI Component Layer": 0.5, // Frontend
+    "UI Component Layer": 0.5,
+    "React Hooks / Shared Logic": 0.8,
+    "React Context / State": 1.1,
+    "State Management Layer": 1.2,
     "Utility / Shared Logic": 0.7,
+    "Configuration / Constants": 0.6,
     "Application Core": 1.0,
     "Worker Layer": 0.9,
     "External/Unresolved": 0.0,
@@ -249,9 +254,9 @@ async function run() {
     const ZONE_IMPACT_FACTOR = 0.1;
 
     let score = semanticChangeProfile.base +
-                (apiImpacts.length * semanticChangeProfile.impact_weight) +
-                (maxDepth * DEPTH_IMPACT_FACTOR) +
-                (zoneWeightSum * ZONE_IMPACT_FACTOR);
+        (apiImpacts.length * semanticChangeProfile.impact_weight) +
+        (maxDepth * DEPTH_IMPACT_FACTOR) +
+        (zoneWeightSum * ZONE_IMPACT_FACTOR);
 
     score *= targetCriticalityMultiplier;
 
@@ -365,8 +370,8 @@ async function run() {
         if (finalRiskLevel === "CRITICAL" || finalRiskLevel === "HIGH") {
             finalRiskLevel = "MEDIUM - Needs Verification";
         } else {
-             // If it was already MEDIUM or LOW, just add the verification note
-             finalRiskLevel += " - Needs Verification";
+            // If it was already MEDIUM or LOW, just add the verification note
+            finalRiskLevel += " - Needs Verification";
         }
         confidenceReason = `Low confidence (${combinedConfidence.toFixed(0)}%) due to partial graph analysis. Verification is recommended.`;
     }
@@ -529,7 +534,7 @@ Adhere strictly to the requested JSON format and provide a professional, expert 
         const outputPath = path.join(process.cwd(), 'impact-report.html'); // Save to project root
         fs.writeFileSync(outputPath, finalHtml);
         console.log(`Generated visual report: ${outputPath}`);
-        
+
         const platform = process.platform;
         let command;
 

@@ -33,16 +33,23 @@ function extractScriptContent(svelteCode) {
 function getArchitecturalZone(filePath, projectRoot) {
     const relPath = path.relative(projectRoot, filePath).replace(/\\/g, '/'); // Normalize path separators
 
-    if (relPath.includes('src/routes') || relPath.includes('app/api') || relPath.includes('pages/api')) return "API Layer / Route Handlers";
-    if (relPath.includes('src/middleware') || relPath.includes('middleware')) return "Middleware"; // Next.js middleware
-    if (relPath.includes('src/lib/db') || relPath.includes('lib/db')) return "Database Access Layer";
+    if (relPath.includes('src/routes') || relPath.includes('app/api') || relPath.includes('pages/api') || relPath.includes('routes/')) return "API Layer / Route Handlers";
+    if (relPath.includes('src/middleware') || relPath.includes('middleware')) return "Middleware";
+    if (relPath.includes('src/lib/db') || relPath.includes('lib/db') || relPath.includes('models/')) return "Database Access Layer / Models";
     if (relPath.includes('src/lib/auth') || relPath.includes('lib/auth')) return "Authentication Layer";
-    // UI Component Layer for React/Next.js/Svelte
-    if (relPath.includes('src/components') || relPath.includes('components') || relPath.includes('app') || relPath.includes('pages')) return "UI Component Layer";
+
+    // UI Component Layer for React/Next.js/Svelte/Mobile
+    if (relPath.includes('src/components') || relPath.includes('components') || relPath.includes('app') || relPath.includes('pages') || relPath.includes('views/')) return "UI Component Layer";
+    if (relPath.includes('src/hooks') || relPath.includes('hooks/')) return "React Hooks / Shared Logic";
+    if (relPath.includes('src/context') || relPath.includes('contexts/')) return "React Context / State";
+    if (relPath.includes('store/') || relPath.includes('redux/') || relPath.includes('slices/')) return "State Management Layer";
+
     if (relPath.includes('src/utils') || relPath.includes('utils')) return "Utility / Shared Logic";
-    if (relPath.includes('src/services') || relPath.includes('services')) return "Service / Business Logic Layer";
+    if (relPath.includes('src/services') || relPath.includes('services') || relPath.includes('controllers/')) return "Service / Business Logic Layer";
+    if (relPath.includes('src/config') || relPath.includes('config/')) return "Configuration / Constants";
     if (relPath.includes('src/workers') || relPath.includes('workers')) return "Worker Layer";
-    if (relPath.startsWith('src')) return "Application Core"; // Generic src folder
+
+    if (relPath.startsWith('src')) return "Application Core";
     return "Unknown Zone";
 }
 
@@ -97,7 +104,19 @@ function resolveImportPath(importerPath, importedModule, allProjectFiles, projec
         }
     }
 
-    // 3. Node modules are not resolved as project files
+    // 3. Handle common aliases (e.g., '@/components/Button' or '~/lib/utils')
+    if (importedModule.startsWith('@/') || importedModule.startsWith('~/')) {
+        let potentialPath = path.join(projectRoot, 'src', importedModule.substring(2));
+        for (const ext of EXTENSIONS) {
+            if (allProjectFiles.has(potentialPath + ext)) return potentialPath + ext;
+        }
+        if (allProjectFiles.has(potentialPath)) return potentialPath;
+        for (const ext of EXTENSIONS) {
+            if (allProjectFiles.has(path.join(potentialPath, `index${ext}`))) return path.join(potentialPath, `index${ext}`);
+        }
+    }
+
+    // 4. Node modules are not resolved as project files
     return null;
 }
 
@@ -133,7 +152,19 @@ function getRouteInfo(filePath, projectRoot) {
     // Next.js Pages Router pages (e.g., pages/dashboard.tsx)
     if (relPath.includes('pages')) {
         const parts = relPath.split('pages/')[1];
-        return '/' + parts.replace(/\.(js|ts|jsx|tsx)$/, '').replace(/\/$/, '') || '/';
+        return '/' + parts.replace(/\.(js|ts|jsx|tsx)$/, '').replace(/\/index$/, '') || '/';
+    }
+
+    // Standard Express/Node.js routes (e.g., routes/users.js)
+    if (relPath.includes('routes/')) {
+        const parts = relPath.split('routes/')[1];
+        return '/' + parts.replace(/\.(js|ts|jsx|tsx)$/, '').replace(/\/index$/, '') || '/';
+    }
+
+    // Standard Express/Node.js controllers (heuristic)
+    if (relPath.includes('controllers/')) {
+        const parts = relPath.split('controllers/')[1];
+        return '/api/' + parts.replace(/\.(js|ts|jsx|tsx)$/, '').replace(/Controller$/, '').toLowerCase();
     }
 
     return null;
@@ -213,7 +244,7 @@ export function parseToGraph(targetPath, graphMode = 'FAST') {
 
             const ast = parser.parse(code, {
                 sourceType: 'module',
-                plugins: ['jsx', 'typescript', 'decorators-legacy', 'importAssertions', 'dynamicImport'] // Removed 'estree'
+                plugins: ['jsx', 'typescript', 'decorators-legacy', 'importAssertions', 'dynamicImport', 'classProperties', 'optionalChaining', 'nullishCoalescingOperator']
             });
 
             babelTraverse(ast, {
@@ -277,7 +308,7 @@ export function parseToGraph(targetPath, graphMode = 'FAST') {
                         }
                     }
                 },
-                'FunctionDeclaration|ArrowFunctionExpression|FunctionExpression|ObjectMethod'(p) {
+                'FunctionDeclaration|ArrowFunctionExpression|FunctionExpression|ObjectMethod|ClassMethod|ClassPrivateMethod'(p) {
                     let name = null;
                     let isApi = false;
                     let nodeId = null;
@@ -289,9 +320,14 @@ export function parseToGraph(targetPath, graphMode = 'FAST') {
                         name = p.node.id.name;
                     } else if (t.isVariableDeclarator(p.parentPath.node) && t.isIdentifier(p.parentPath.node.id)) {
                         name = p.parentPath.node.id.name;
+                    } else if (t.isExportDefaultDeclaration(p.parentPath.node)) {
+                        // Fallback to filename for default exports (common in React components)
+                        name = (t.isFunctionDeclaration(p.node) && p.node.id) ? p.node.id.name : path.basename(fullPath, path.extname(fullPath));
                     } else if (t.isObjectProperty(p.parentPath.node) && t.isIdentifier(p.parentPath.node.key)) {
                         name = p.parentPath.node.key.name;
                     } else if (t.isObjectMethod(p.node) && t.isIdentifier(p.node.key)) {
+                        name = p.node.key.name;
+                    } else if ((t.isClassMethod(p.node) || t.isClassPrivateMethod(p.node)) && t.isIdentifier(p.node.key)) {
                         name = p.node.key.name;
                     }
 
@@ -299,6 +335,13 @@ export function parseToGraph(targetPath, graphMode = 'FAST') {
                         if (t.isIdentifier(param)) return param.name;
                         if (t.isAssignmentPattern(param) && t.isIdentifier(param.left)) return param.left.name;
                         if (t.isRestElement(param) && t.isIdentifier(param.argument)) return `...${param.argument.name}`;
+                        if (t.isObjectPattern(param)) {
+                            // Handle destructured props in React: ({ id, name })
+                            return param.properties.map(prop => {
+                                if (t.isObjectProperty(prop) && t.isIdentifier(prop.key)) return prop.key.name;
+                                return 'destructured';
+                            }).join(', ');
+                        }
                         return 'unknown';
                     });
 
@@ -367,6 +410,20 @@ export function parseToGraph(targetPath, graphMode = 'FAST') {
                                 // For now, we add the raw name.
                                 graph.edges.push({ from: nodeId, to: calleeName, type: "dependency", kind: "call", callPath: innerP.node.loc });
                             }
+                        },
+                        JSXOpeningElement(innerP) {
+                            let componentName = null;
+                            if (t.isJSXIdentifier(innerP.node.name)) {
+                                componentName = innerP.node.name.name;
+                            } else if (t.isJSXMemberExpression(innerP.node.name)) {
+                                if (t.isJSXIdentifier(innerP.node.name.property)) {
+                                    componentName = innerP.node.name.property.name;
+                                }
+                            }
+
+                            if (componentName) {
+                                graph.edges.push({ from: nodeId, to: componentName, type: "dependency", kind: "jsx_component", callPath: innerP.node.loc });
+                            }
                         }
                     });
                 }
@@ -404,8 +461,8 @@ export function parseToGraph(targetPath, graphMode = 'FAST') {
     // Start BFS from all root files/modules
     for (const nodeId of rootNodes) {
         if (graph.nodes[nodeId]?.type === 'module') { // Only start BFS from actual files for propagation
-             queue.push({ id: nodeId, depth: 0 });
-             visitedNodes.add(nodeId);
+            queue.push({ id: nodeId, depth: 0 });
+            visitedNodes.add(nodeId);
         }
     }
 
