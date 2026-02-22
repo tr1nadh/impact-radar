@@ -45,18 +45,13 @@ const argv = yargs(hideBin(process.argv))
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-if (!process.env.OPENAI_API_KEY) {
-    console.error("❌ OPENAI_API_KEY is not set.");
-    console.error("Set it before running:");
-    console.error("Windows: set OPENAI_API_KEY=your_key");
-    console.error("Mac/Linux: export OPENAI_API_KEY=your_key");
-    process.exit(1);
+// Initialize OpenAI client only if key is present
+let openai = null;
+if (process.env.OPENAI_API_KEY) {
+    openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY
+    });
 }
-
-// Initialize OpenAI client
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-});
 
 // 🧠 Upgrade 1 — Behavioral Diff Engine (CRITICAL) - Simplified profiles, as the change_type string carries more weight
 const SEMANTIC_CHANGE_PROFILES = {
@@ -167,6 +162,14 @@ function getEndpointCriticality(apiNode, apiCallSafetySummaries) {
 async function run() {
     const startTime = performance.now();
     const projectPath = path.resolve(argv.project);
+
+    // Validate project path exists to prevent ENOENT crashes
+    if (!fs.existsSync(projectPath)) {
+        console.error(`❌ Error: Project directory does not exist at path:\n  ${projectPath}`);
+        console.error(`Please verify the --project path is correct.`);
+        process.exit(1);
+    }
+
     const graph = parseToGraph(projectPath);
 
     // Parse detailed change_type (Fix 2: Behavioral Delta Detection)
@@ -453,13 +456,44 @@ Your analysis must include:
 
 Adhere strictly to the requested JSON format and provide a professional, expert tone.`;
 
-    const aiRes = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [{ role: "user", content: prompt }],
-        response_format: { type: "json_object" }
-    });
+    let aiExplanation = null;
 
-    const aiExplanation = JSON.parse(aiRes.choices[0].message.content);
+    if (openai) {
+        try {
+            console.log("Generating AI analysis...");
+            const aiRes = await openai.chat.completions.create({
+                model: "gpt-4o",
+                messages: [{ role: "user", content: prompt }],
+                response_format: { type: "json_object" }
+            });
+            aiExplanation = JSON.parse(aiRes.choices[0].message.content);
+        } catch (error) {
+            console.error("AI Analysis failed:", error.message);
+            aiExplanation = {
+                summary: "AI Analysis failed to generate.",
+                technical_reasoning: ["See console for error block."],
+                recommendation: "Review the raw JSON output for impact details."
+            };
+        }
+    } else {
+        // Only log simple warning to reduce noise
+        console.warn("⚠️ AI analysis skipped (OPENAI_API_KEY not set). To enable, set your API key in the environment.");
+        aiExplanation = {
+            summary: "AI analysis skipped. Please set the OPENAI_API_KEY environment variable.",
+            behavioral_delta_interpretation: "N/A",
+            technical_reasoning: ["OPENAI_API_KEY was not provided in the environment."],
+            caller_safety_analysis_summary: "N/A",
+            estimated_failure_probabilities: "N/A",
+            deployment_projection: {
+                immediate_effects: "Unknown (requires AI)",
+                long_term_effects: "Unknown (requires AI)"
+            },
+            scary_insight: "N/A",
+            simulated_failure_trace: "N/A",
+            recommendation: "Check the raw report data or add an OpenAI API key.",
+            visual_narrative_suggestion: "N/A"
+        };
+    }
 
     // Store the full output in a variable
     const finalOutput = {
