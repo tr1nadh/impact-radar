@@ -3,22 +3,18 @@
   <img src="https://github.com/user-attachments/assets/b775a4a6-6f70-47ca-b0a7-bc4607686ae8" width="400" alt="ImpactRadar Logo"/>
 </p>
 
-Good. I will **strengthen positioning and clarity** without touching any technical or implementation details.
-
-Here is your rewritten README in clean Markdown format, improved for judges but technically identical.
-
 ---
 
 # 🚨 ImpactRadar
 
-ImpactRadar is an AI-powered Blast Radius Analysis tool for JavaScript codebases.
+ImpactRadar is an AI-powered Blast Radius Analysis tool, currently scoped to SvelteKit applications.
 
-It analyzes a proposed code change and makes its system-wide impact visible **before it is merged**.
+It analyzes a proposed code change and makes its system-wide impact visible before it is merged.
 
 This is not about predicting failures.
 It is about making impact explicit so engineers can act with confidence.
 
-🔗 **Live Demo:** [YouTube Video](https://youtu.be/snfx-d7SZSs)
+🔗 **Live Demo:** [YouTube Video](https://youtu.be/cP_IK4NUndA)
 
 ---
 
